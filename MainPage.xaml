@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WeightCalorieMAUI.MainPage">
+
+    <!-- Main layout using VerticalStackLayout with top padding -->
+    <VerticalStackLayout Padding="0,5,0,0" BackgroundColor="LightCyan">
+
+        <!-- First row of buttons: Add Record, Load Data, Exit -->
+        <HorizontalStackLayout Spacing="5" HorizontalOptions="Center">
+            <Button Text="Add Record" BackgroundColor="Bisque" TextColor="Black" FontAttributes="Bold" Clicked="OnAddRecordClicked" />
+            <Button Text="Exit" BackgroundColor="Bisque" TextColor="Black" FontAttributes="Bold" Clicked="OnExitClicked" />
+        </HorizontalStackLayout>
+
+        <!-- Spacer to create separation between button rows -->
+        <BoxView HeightRequest="5" BackgroundColor="Transparent"/>
+
+        <!-- Second row of buttons: Edit Record, Delete Record -->
+        <!-- Use &#10; to create a new line within the button -->
+        <HorizontalStackLayout Spacing="5" HorizontalOptions="Center">
+            <Frame BackgroundColor="Bisque" Padding="5" CornerRadius="5" WidthRequest="105">
+                <Label Text="Edit&#10;Select Record&#10;Click Edit" 
+                       TextColor="Black" 
+                       FontAttributes="Bold" 
+                       HorizontalOptions="Center" 
+                       HorizontalTextAlignment="Center" 
+                       LineBreakMode="WordWrap"
+                       MaxLines="3">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditRecordCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </Frame>
+
+            <Frame BackgroundColor="Bisque" Padding="5" CornerRadius="5" WidthRequest="105">
+                <Label Text="Delete&#10;Select Record&#10;Click Delete" 
+                       TextColor="Black" 
+                       FontAttributes="Bold" 
+                       HorizontalOptions="Center" 
+                       HorizontalTextAlignment="Center" 
+                       LineBreakMode="WordWrap"
+                       MaxLines="3">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding DeleteRecordCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </Frame>
+
+        </HorizontalStackLayout>
+
+        <!-- Section for displaying calculated averages -->
+        <StackLayout Padding="10">
+            <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, Auto">
+                <!-- Label for Average Weight Loss -->
+                <Label Text="Average Weight Loss:" FontAttributes="Bold" HorizontalTextAlignment="End" Grid.Row="0" Grid.Column="0"/>
+                <Label x:Name="AvgWeightLossLabel" Text="N/A" Grid.Row="0" Grid.Column="1" HorizontalTextAlignment="Start" Margin="24,0,0,0"/>
+
+                <!-- Label for Average Calories -->
+                <Label Text="Average Calories:" FontAttributes="Bold" HorizontalTextAlignment="End" Grid.Row="1" Grid.Column="0"/>
+                <Label x:Name="AvgCaloriesLabel" Text="N/A" Grid.Row="1" Grid.Column="1" HorizontalTextAlignment="Start"/>
+            </Grid>
+        </StackLayout>
+
+        <!-- Panel for Adding New Record, initially hidden -->
+        <StackLayout x:Name="AddRecordPanel" IsVisible="False" Padding="10">
+            <!-- Date Picker for selecting date -->
+            <DatePicker x:Name="DatePicker" />
+            <!-- Entry field for entering weight -->
+            <Entry x:Name="WeightEntry" Placeholder="Enter Weight" Keyboard="Numeric" TextChanged="OnEntryTextChanged" />
+            <!-- Entry field for entering calories -->
+            <Entry x:Name="CaloriesEntry" Placeholder="Enter Calories" Keyboard="Numeric" TextChanged="OnEntryTextChanged" />
+            <!-- Button to save new record -->
+            <Button Text="Save Record" BackgroundColor="Bisque" TextColor="Black" FontAttributes="Bold" Clicked="OnSaveRecordClicked" />
+            <!-- Button to cancel adding a new record -->
+            <Button Text="Cancel" BackgroundColor="Bisque" TextColor="Black" FontAttributes="Bold" Clicked="OnCancelClicked" />
+        </StackLayout>
+
+        <!-- Scrollable list to display data records -->
+        <ScrollView>
+            <CollectionView x:Name="DataView" ItemsSource="{Binding DataItems}" SelectionMode="Single" SelectionChanged="OnRecordSelected">
+
+                <!-- Header row for the data table -->
+                <CollectionView.Header>
+                    <Grid ColumnDefinitions="1*,1*,1*">
+                        <Label Text="Date" FontAttributes="Bold" Grid.Column="0" HorizontalOptions="Center" />
+                        <Label Text="Weight" FontAttributes="Bold" Grid.Column="1" HorizontalOptions="Center" />
+                        <Label Text="Calories" FontAttributes="Bold" Grid.Column="2" HorizontalOptions="Center" />
+                    </Grid>
+                </CollectionView.Header>
+
+                <!-- Template for each data record row -->
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="1*,1*,1*" RowDefinitions="1*">
+                            <Label Text="{Binding Date}" Grid.Column="0" HorizontalOptions="Center" VerticalOptions="Center" />
+                            <Label Text="{Binding Weight}" Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" />
+                            <Label Text="{Binding Calorie}" Grid.Column="2" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </ScrollView>
+    </VerticalStackLayout>
+</ContentPage>

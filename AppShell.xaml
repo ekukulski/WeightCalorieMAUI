@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="WeightCalorieMAUI.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:WeightCalorieMAUI"
+    Shell.FlyoutBehavior="Flyout"
+    Shell.NavBarHasShadow="False"
+    Shell.BackgroundColor="LightSkyBlue"
+    Shell.Title="WeightCalorieMAUI">
+
+    <!-- Customizing the Navigation Bar / Title -->
+    <Shell.TitleView>
+        <Grid BackgroundColor="LightSkyBlue" Padding="10">
+            <Label Text="Weight and Calorie Tracker"
+                   FontSize="24"
+                   FontAttributes="Bold"
+                   TextColor="White"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"/>
+        </Grid>
+    </Shell.TitleView>
+
+    <ShellContent
+        ContentTemplate="{DataTemplate local:MainPage}"
+        Route="MainPage"/>
+</Shell>
