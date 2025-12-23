@@ -1,0 +1,219 @@
+================================================================================
+                   WeightCalorieMAUI Installation Instructions
+================================================================================
+
+VERSION: 1.0
+RELEASE DATE: December 20, 2025
+PLATFORM: Windows 10/11 (x64)
+MINIMUM OS VERSION: Windows 10 Build 17763 (Version 1809)
+
+================================================================================
+                              PREREQUISITES
+================================================================================
+
+✓ Windows 10 version 1809 (Build 17763) or later
+✓ Windows 11 (any version)
+✓ Administrator privileges (required for certificate installation only)
+✓ Approximately 50 MB of disk space
+
+================================================================================
+                          INSTALLATION PROCEDURE
+================================================================================
+
+STEP 1: INSTALL THE SECURITY CERTIFICATE
+-----------------------------------------
+This step is REQUIRED for first-time installation and must be performed with
+administrator privileges. The certificate ensures Windows trusts the application.
+
+1. Locate the file: WeightCalorieMAUI.cer
+2. RIGHT-CLICK on WeightCalorieMAUI.cer
+3. Select "Install Certificate" from the context menu
+4. In the Certificate Import Wizard:
+   
+   ► Store Location: Select "Local Machine" (requires administrator)
+   ► Click "Next"
+   
+   ► Certificate Store: Select "Place all certificates in the following store"
+   ► Click "Browse..."
+   ► Select "Trusted Root Certification Authorities"
+   ► Click "OK"
+   ► Click "Next"
+   
+   ► Review the summary and click "Finish"
+   
+   ► A security warning will appear asking if you want to install this certificate
+   ► Click "Yes" to confirm
+
+5. You should see a message: "The import was successful"
+6. Click "OK"
+
+⚠ IMPORTANT: This certificate installation only needs to be done ONCE per computer.
+            Future updates of WeightCalorieMAUI will use the same certificate.
+
+================================================================================
+
+STEP 2: INSTALL THE APPLICATION
+--------------------------------
+After the certificate is installed, you can install the application.
+
+1. Locate the .msix file (e.g., WeightCalorieMAUI_1.0.0.0_x64.msix)
+2. DOUBLE-CLICK the .msix file
+3. The Windows App Installer will open automatically
+4. Review the app information displayed:
+   - Publisher: CN=Kukulski Development
+   - Version: 1.0.0.0
+   - Capabilities required by the app
+5. Click the "Install" button
+6. Wait for the installation to complete (typically 10-30 seconds)
+7. Once completed, you'll see "This app was installed successfully"
+8. Click "Launch" to start the app immediately, or close the installer
+
+================================================================================
+                            LAUNCHING THE APPLICATION
+================================================================================
+
+METHOD 1: Start Menu
+---------------------
+1. Click the Windows Start button
+2. Scroll to "W" or type "WeightCalorieMAUI"
+3. Click on "WeightCalorieMAUI" to launch
+
+METHOD 2: Windows Search
+-------------------------
+1. Press the Windows key
+2. Type "WeightCalorieMAUI"
+3. Press Enter or click the app icon
+
+The application will remember your data between sessions. All weight and calorie
+records are stored locally on your computer.
+
+================================================================================
+                                  UPDATING
+================================================================================
+
+To install a newer version of WeightCalorieMAUI:
+
+1. You DO NOT need to uninstall the previous version
+2. You DO NOT need to reinstall the certificate
+3. Simply double-click the new .msix file and click "Update"
+4. Your existing data will be preserved automatically
+
+================================================================================
+                                UNINSTALLING
+================================================================================
+
+METHOD 1: Settings (Recommended)
+---------------------------------
+1. Press Windows + I to open Settings
+2. Click "Apps" (or "Apps & features" on Windows 10)
+3. Search for "WeightCalorieMAUI" or scroll to find it
+4. Click on WeightCalorieMAUI
+5. Click "Uninstall"
+6. Confirm by clicking "Uninstall" again
+7. Wait for the uninstallation to complete
+
+METHOD 2: Start Menu
+---------------------
+1. Find WeightCalorieMAUI in the Start Menu
+2. Right-click on the app
+3. Select "Uninstall"
+4. Confirm the uninstallation
+
+⚠ NOTE: Uninstalling will remove the application but your data files may remain
+        in: C:\Users\[YourUsername]\AppData\Local\Packages\[AppPackage]\LocalState
+        If you want to completely remove all data, delete this folder manually.
+
+================================================================================
+                              TROUBLESHOOTING
+================================================================================
+
+ISSUE: "This app package is not signed with a trusted certificate"
+-------------------------------------------------------------------
+SOLUTION: The certificate was not installed correctly. Repeat STEP 1 and ensure
+          you select "Local Machine" and place it in "Trusted Root Certification
+          Authorities" store.
+
+ISSUE: Installation fails with error code
+------------------------------------------
+SOLUTION: 
+1. Open PowerShell as Administrator
+2. Run: Get-AppxPackage -Name "*WeightCalorieMAUI*" | Remove-AppxPackage
+3. Retry installation from STEP 2
+
+ISSUE: App doesn't appear in Start Menu
+----------------------------------------
+SOLUTION:
+1. Press Windows + R
+2. Type: shell:AppsFolder
+3. Press Enter
+4. Find WeightCalorieMAUI and drag it to your desktop or Start Menu
+
+ISSUE: App crashes on startup
+------------------------------
+SOLUTION:
+1. Ensure you have the latest Windows updates installed
+2. Try running Windows Update
+3. Reinstall the application
+4. Check Windows Event Viewer for detailed error messages
+
+ISSUE: Cannot find my data after reinstalling
+----------------------------------------------
+SOLUTION: Data is stored in your AppData folder. Navigate to:
+          %LocalAppData%\Packages\
+          Look for a folder starting with "com.kukulski.weightcaloriemaui"
+
+================================================================================
+                           SYSTEM REQUIREMENTS
+================================================================================
+
+MINIMUM REQUIREMENTS:
+• Operating System: Windows 10 Build 17763 or later
+• Processor: x64 architecture
+• RAM: 1 GB (2 GB recommended)
+• Disk Space: 50 MB
+• Display: 1024x768 resolution or higher
+
+RECOMMENDED:
+• Windows 11 with latest updates
+• 4 GB RAM or more
+• SSD storage for better performance
+
+================================================================================
+                        PRIVACY & DATA STORAGE
+================================================================================
+
+WeightCalorieMAUI stores all your data LOCALLY on your computer. No data is
+transmitted to external servers or the cloud.
+
+Data Location:
+C:\Users\[YourUsername]\AppData\Local\Packages\[AppPackageID]\LocalState\
+
+You can back up your data by copying the "WeightCalorie.txt" file from this
+location to a safe place. To restore, simply copy it back to the same location.
+
+================================================================================
+                              SUPPORT & FEEDBACK
+================================================================================
+
+For questions, bug reports, or feature requests:
+
+GitHub: https://github.com/ekukulski/WeightCalorieMAUI
+Issues: https://github.com/ekukulski/WeightCalorieMAUI/issues
+
+When reporting issues, please include:
+• Your Windows version (run "winver" to check)
+• Steps to reproduce the problem
+• Any error messages you received
+
+================================================================================
+                                  LICENSE
+================================================================================
+
+This application is distributed under the terms specified in the LICENSE file
+included in the source repository.
+
+© 2025 Kukulski Development. All rights reserved.
+
+================================================================================
+                            END OF INSTRUCTIONS
+================================================================================

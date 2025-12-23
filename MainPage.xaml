@@ -1,7 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="WeightCalorieMAUI.MainPage">
+             xmlns:local="clr-namespace:WeightCalorieMAUI"
+             x:Class="WeightCalorieMAUI.MainPage"
+             x:DataType="local:MainPage">
 
     <!-- Main layout using VerticalStackLayout with top padding -->
     <VerticalStackLayout Padding="0,5,0,0" BackgroundColor="LightCyan">
@@ -90,7 +92,7 @@
 
                 <!-- Template for each data record row -->
                 <CollectionView.ItemTemplate>
-                    <DataTemplate>
+                    <DataTemplate x:DataType="local:WeightCalorieData">
                         <Grid ColumnDefinitions="1*,1*,1*" RowDefinitions="1*">
                             <Label Text="{Binding Date}" Grid.Column="0" HorizontalOptions="Center" VerticalOptions="Center" />
                             <Label Text="{Binding Weight}" Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" />

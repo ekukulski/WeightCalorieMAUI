@@ -4,19 +4,15 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.ApplicationModel;
 
 namespace WeightCalorieMAUI
 {
     /// <summary>
     /// The main page of the WeightCalorieMAUI application.
     /// </summary>
-    public partial class MainPage : ContentPage, INotifyPropertyChanged
+    public partial class MainPage : ContentPage
     {
-        /// <summary>
-        /// Event that triggers when a property value changes.
-        /// </summary>
-        public event PropertyChangedEventHandler PropertyChanged;
-
         private ObservableCollection<WeightCalorieData> _dataItems = new();
 
         /// <summary>
@@ -34,7 +30,7 @@ namespace WeightCalorieMAUI
 
         private readonly DataService _dataService;
         private readonly WeightCalorieManager _manager;
-        private WeightCalorieData _selectedRecord;
+        private WeightCalorieData? _selectedRecord;
         private bool _isEditing = false;
         private bool _isDeleting = false;
 
@@ -52,32 +48,32 @@ namespace WeightCalorieMAUI
             EditRecordCommand = new Command(async () => await EditSelectedRecord());
             DeleteRecordCommand = new Command(async () => await DeleteSelectedRecord());
 
-            BindingContext = this; // 🔹 Ensure BindingContext is set
-
             BindingContext = this;
 
             _dataService = new DataService();
             _manager = new WeightCalorieManager();
 
-            // 🔹 Ensure data and averages are loaded on the main thread
-            MainThread.InvokeOnMainThreadAsync(async () => await LoadDataAsync());
+            // Import database on startup, then load data
+            MainThread.InvokeOnMainThreadAsync(async () => 
+            {
+                bool imported = await _dataService.ImportDatabaseAsync();
+                if (imported)
+                {
+                    await DisplayAlert("Import", "Database imported from OneDrive successfully.", "OK");
+                }
+                await LoadDataAsync();
+            });
 
             // Adjust window size for Windows platform
             if (DeviceInfo.Platform == DevicePlatform.WinUI)
             {
-                var window = Application.Current.Windows[0];
-                window.Width = 450;
-                window.Height = 1000;
+                var window = Application.Current?.Windows[0];
+                if (window != null)
+                {
+                    window.Width = 450;
+                    window.Height = 1000;
+                }
             }
-        }
-
-        /// <summary>
-        /// Triggers the PropertyChanged event for a given property.
-        /// </summary>
-        /// <param name="propertyName">The name of the property that changed.</param>
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         /// <summary>
@@ -91,8 +87,10 @@ namespace WeightCalorieMAUI
         /// <summary>
         /// Closes the application.
         /// </summary>
-        private void OnExitClicked(object sender, EventArgs e)
+        private async void OnExitClicked(object sender, EventArgs e)
         {
+            await _dataService.ExportDatabaseAsync();
+            await DisplayAlert("Export", "Database exported to OneDrive. Allow ~30 seconds for OneDrive to sync.", "OK");
             System.Diagnostics.Process.GetCurrentProcess().Kill();
         }
         
@@ -138,6 +136,7 @@ namespace WeightCalorieMAUI
 
             _dataService.SaveRecord(newRecord);
             await LoadDataAsync();
+            await _dataService.ExportDatabaseAsync(); // Export after saving
 
             WeightEntry.Text = string.Empty;
             CaloriesEntry.Text = string.Empty;
@@ -177,14 +176,15 @@ namespace WeightCalorieMAUI
         {
             if (_selectedRecord == null) return;
 
-            string newWeight = await DisplayPromptAsync("Edit Record", "Enter new weight:", initialValue: _selectedRecord.Weight);
+            string? newWeight = await DisplayPromptAsync("Edit Record", "Enter new weight:", initialValue: _selectedRecord.Weight);
             if (string.IsNullOrWhiteSpace(newWeight)) return;
 
-            string newCalories = await DisplayPromptAsync("Edit Record", "Enter new calories:", initialValue: _selectedRecord.Calorie);
+            string? newCalories = await DisplayPromptAsync("Edit Record", "Enter new calories:", initialValue: _selectedRecord.Calorie);
             if (string.IsNullOrWhiteSpace(newCalories)) return;
 
             _dataService.UpdateRecord(_selectedRecord.Date, newWeight, newCalories);
             await LoadDataAsync();
+            await _dataService.ExportDatabaseAsync(); // Export after updating
             _isEditing = false;
         }
 
@@ -195,7 +195,7 @@ namespace WeightCalorieMAUI
         {
             if (e.CurrentSelection.Count == 0) return;
 
-            _selectedRecord = (WeightCalorieData)e.CurrentSelection.FirstOrDefault();
+            _selectedRecord = e.CurrentSelection.FirstOrDefault() as WeightCalorieData;
             if (_selectedRecord == null) return;
 
             if (_isEditing)
@@ -252,6 +252,7 @@ namespace WeightCalorieMAUI
 
             _dataService.DeleteRecord(_selectedRecord.Date);
             await LoadDataAsync();
+            await _dataService.ExportDatabaseAsync(); // Export after deleting
             _isDeleting = false;
         }
     }
