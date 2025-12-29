@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Maui.Controls;
@@ -34,9 +33,11 @@ namespace WeightCalorieMAUI
         private bool _isEditing = false;
         private bool _isDeleting = false;
 
+        // Ensures startup import/load only runs once per app session
+        private bool _initialized = false;
+
         public Command EditRecordCommand { get; }
         public Command DeleteRecordCommand { get; }
-
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MainPage"/> class.
@@ -53,26 +54,33 @@ namespace WeightCalorieMAUI
             _dataService = new DataService();
             _manager = new WeightCalorieManager();
 
-            // Import database on startup, then load data
-            MainThread.InvokeOnMainThreadAsync(async () => 
-            {
-                bool imported = await _dataService.ImportDatabaseAsync();
-                if (imported)
-                {
-                    await DisplayAlert("Import", "Database imported from OneDrive successfully.", "OK");
-                }
-                await LoadDataAsync();
-            });
+            // NOTE:
+            // Do NOT import/load here. Constructors can’t be awaited.
+            // We do it reliably in OnAppearing().
+        }
 
-            // Adjust window size for Windows platform
-            if (DeviceInfo.Platform == DevicePlatform.WinUI)
+        /// <summary>
+        /// Import database on startup (silent), then load data. Runs once.
+        /// </summary>
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+
+            if (_initialized) return;
+            _initialized = true;
+
+            try
             {
-                var window = Application.Current?.Windows[0];
-                if (window != null)
-                {
-                    window.Width = 450;
-                    window.Height = 1000;
-                }
+                // Import first (silent) then load UI
+                await _dataService.ImportDatabaseAsync();
+                await LoadDataAsync();
+            }
+            catch (Exception ex)
+            {
+                // Keep app quiet but make failures visible during debugging
+                System.Diagnostics.Debug.WriteLine($"Startup import/load failed: {ex}");
+                // Still try to load whatever is local
+                try { await LoadDataAsync(); } catch { /* swallow to avoid crashing */ }
             }
         }
 
@@ -85,15 +93,23 @@ namespace WeightCalorieMAUI
         }
 
         /// <summary>
-        /// Closes the application.
+        /// Closes the application (exports silently first).
         /// </summary>
         private async void OnExitClicked(object sender, EventArgs e)
         {
-            await _dataService.ExportDatabaseAsync();
-            await DisplayAlert("Export", "Database exported to OneDrive. Allow ~30 seconds for OneDrive to sync.", "OK");
+            try
+            {
+                await _dataService.ExportDatabaseAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Export on exit failed: {ex}");
+                // No pop-up; exit anyway
+            }
+
             System.Diagnostics.Process.GetCurrentProcess().Kill();
         }
-        
+
         /// <summary>
         /// Loads the data asynchronously from the data service.
         /// </summary>
@@ -135,8 +151,17 @@ namespace WeightCalorieMAUI
             };
 
             _dataService.SaveRecord(newRecord);
+
             await LoadDataAsync();
-            await _dataService.ExportDatabaseAsync(); // Export after saving
+
+            try
+            {
+                await _dataService.ExportDatabaseAsync(); // Export after saving
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Export after save failed: {ex}");
+            }
 
             WeightEntry.Text = string.Empty;
             CaloriesEntry.Text = string.Empty;
@@ -158,7 +183,12 @@ namespace WeightCalorieMAUI
         /// </summary>
         private async void OnEditRecordClicked(object sender, EventArgs e)
         {
-            await EditSelectedRecord();
+            _isEditing = true;
+            _isDeleting = false;
+
+            // If a record is already selected, edit immediately
+            if (_selectedRecord != null)
+                await EditSelectedRecord();
         }
 
         /// <summary>
@@ -166,7 +196,12 @@ namespace WeightCalorieMAUI
         /// </summary>
         private async void OnDeleteRecordClicked(object sender, EventArgs e)
         {
-            await DeleteSelectedRecord();
+            _isDeleting = true;
+            _isEditing = false;
+
+            // If a record is already selected, delete immediately
+            if (_selectedRecord != null)
+                await DeleteSelectedRecord();
         }
 
         /// <summary>
@@ -184,7 +219,16 @@ namespace WeightCalorieMAUI
 
             _dataService.UpdateRecord(_selectedRecord.Date, newWeight, newCalories);
             await LoadDataAsync();
-            await _dataService.ExportDatabaseAsync(); // Export after updating
+
+            try
+            {
+                await _dataService.ExportDatabaseAsync(); // Export after updating
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Export after edit failed: {ex}");
+            }
+
             _isEditing = false;
         }
 
@@ -215,8 +259,6 @@ namespace WeightCalorieMAUI
         /// <summary>
         /// Handles the TextChanged event for an entry field, ensuring that only valid numeric input is accepted.
         /// </summary>
-        /// <param name="sender">The source of the event, expected to be an <see cref="Entry"/> control.</param>
-        /// <param name="e">The event data containing the new and old text values.</param>
         private void OnEntryTextChanged(object sender, TextChangedEventArgs e)
         {
             Entry entry = (Entry)sender;
@@ -230,8 +272,6 @@ namespace WeightCalorieMAUI
         /// <summary>
         /// Validates if the provided text is a numeric input.
         /// </summary>
-        /// <param name="text">The input text to validate.</param>
-        /// <returns>True if the text is a valid number; otherwise, false.</returns>
         private bool IsValidNumericInput(string text)
         {
             if (string.IsNullOrEmpty(text))
@@ -252,7 +292,16 @@ namespace WeightCalorieMAUI
 
             _dataService.DeleteRecord(_selectedRecord.Date);
             await LoadDataAsync();
-            await _dataService.ExportDatabaseAsync(); // Export after deleting
+
+            try
+            {
+                await _dataService.ExportDatabaseAsync(); // Export after deleting
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Export after delete failed: {ex}");
+            }
+
             _isDeleting = false;
         }
     }
