@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
+    x:Class="WeightCalorieMAUI.ChartPage"
+    Title="Weight Chart">
+
+    <VerticalStackLayout Padding="20" Spacing="16">
+        <Label Text="Weight Over Time" FontSize="24" HorizontalOptions="Center" />
+        <lvc:CartesianChart
+            x:Name="WeightChart"
+            Series="{Binding Series}"
+            XAxes="{Binding XAxes}"
+            YAxes="{Binding YAxes}"
+            HeightRequest="320" />
+
+        <Button
+            Text="Return"
+            Clicked="OnReturnClicked"
+            HorizontalOptions="Center"
+            Margin="0,24,0,0" />
+    </VerticalStackLayout>
+</ContentPage>

@@ -145,7 +145,7 @@ namespace WeightCalorieMAUI
 
             var newRecord = new WeightCalorieData
             {
-                Date = DatePicker.Date.ToString("yyyy-MM-dd"),
+                Date = ((DateTime)DatePicker.Date).ToString("yyyy-MM-dd"),
                 Weight = WeightEntry.Text,
                 Calorie = CaloriesEntry.Text
             };
@@ -303,6 +303,18 @@ namespace WeightCalorieMAUI
             }
 
             _isDeleting = false;
+        }
+
+        private async void OnChartClicked(object sender, EventArgs e)
+        {
+            if (DataItems.Count == 0)
+            {
+                await DisplayAlert("No data", "Add at least one record before showing the chart.", "OK");
+                return;
+            }
+
+            var data = DataItems.ToList();
+            await Navigation.PushAsync(new ChartPage(data));
         }
     }
 }

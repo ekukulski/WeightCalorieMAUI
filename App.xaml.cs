@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 
@@ -26,106 +25,97 @@ namespace WeightCalorieMAUI
         public App()
         {
             InitializeComponent();
+            MainPage = new NavigationPage(new MainPage());
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            var window = new Window(new AppShell());
+            var window = base.CreateWindow(activationState);
 
 #if WINDOWS
             window.HandlerChanged += (s, e) =>
             {
                 var nativeWindow = window.Handler?.PlatformView as Microsoft.UI.Xaml.Window;
-                if (nativeWindow == null)
-                    return;
+                if (nativeWindow == null) return;
 
                 var hwnd = WindowNative.GetWindowHandle(nativeWindow);
                 var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
                 var appWindow = AppWindow.GetFromWindowId(windowId);
-                var presenter = appWindow.Presenter as OverlappedPresenter;
 
-                // Read saved settings
-                int savedW = Preferences.Default.Get(WindowWidthKey, 0);
-                int savedH = Preferences.Default.Get(WindowHeightKey, 0);
-                int savedX = Preferences.Default.Get(WindowXKey, int.MinValue);
-                int savedY = Preferences.Default.Get(WindowYKey, int.MinValue);
-                string savedState = Preferences.Default.Get(WindowStateKey, "");
-
-                bool hasSavedBounds =
-                    savedW > 0 && savedH > 0 &&
-                    savedX != int.MinValue && savedY != int.MinValue;
-
-                bool isApplyingRestore = false;
-
-                // Persist whenever the user moves/resizes/maximizes/restores.
-                appWindow.Changed += async (sender, args) =>
-                {
-                    if (isApplyingRestore)
-                        return;
-
-                    var op = appWindow.Presenter as OverlappedPresenter;
-                    if (op == null)
-                        return;
-
-                    var state = (op.State == OverlappedPresenterState.Maximized) ? "Maximized" : "Normal";
-                    Preferences.Default.Set(WindowStateKey, state);
-
-                    if (state != "Normal")
-                        return;
-
-                    if (!args.DidSizeChange && !args.DidPositionChange)
-                        return;
-
-                    // Allow Windows to finish snap/chrome/DPI adjustments
-                    await Task.Delay(200);
-
-                    if (isApplyingRestore)
-                        return;
-
-                    Preferences.Default.Set(WindowWidthKey, appWindow.Size.Width);
-                    Preferences.Default.Set(WindowHeightKey, appWindow.Size.Height);
-                    Preferences.Default.Set(WindowXKey, appWindow.Position.X);
-                    Preferences.Default.Set(WindowYKey, appWindow.Position.Y);
-                };
-
-                if (!hasSavedBounds)
-                {
-                    // FIRST RUN: open full screen (maximized)
-                    presenter?.Maximize();
+                if (appWindow.Presenter is not OverlappedPresenter presenter)
                     return;
+
+                // 1) Restore on startup
+                bool hasSaved =
+                    Preferences.ContainsKey(WindowWidthKey) &&
+                    Preferences.ContainsKey(WindowHeightKey) &&
+                    Preferences.ContainsKey(WindowXKey) &&
+                    Preferences.ContainsKey(WindowYKey);
+
+                if (!hasSaved)
+                {
+                    // First run on this PC: open full-size (maximized) on whichever monitor we’re on.
+                    presenter.Maximize();
+                    Preferences.Set(WindowStateKey, "Maximized");
+                }
+                else
+                {
+                    int w = Preferences.Get(WindowWidthKey, 1200);
+                    int h = Preferences.Get(WindowHeightKey, 800);
+                    int x = Preferences.Get(WindowXKey, 100);
+                    int y = Preferences.Get(WindowYKey, 100);
+                    string state = Preferences.Get(WindowStateKey, "Normal");
+
+                    // Clamp to visible area (handles monitor changes/docking)
+                    var clamped = ClampRectToVisibleDisplay(new RectInt32(x, y, w, h));
+
+                    // Apply position/size before state
+                    appWindow.MoveAndResize(clamped);
+
+                    if (string.Equals(state, "Maximized", StringComparison.OrdinalIgnoreCase))
+                        presenter.Maximize();
+                    else
+                        presenter.Restore();
                 }
 
-                // Apply restore AFTER first activation (prevents "drift" from Windows final placement)
-                bool appliedOnce = false;
-                nativeWindow.Activated += async (_, __) =>
+                // 2) Persist any user changes (resize/move/maximize/restore)
+                // Note: AppWindow.Changed fires a lot; keep the handler fast.
+                appWindow.Changed += (sender, args) =>
                 {
-                    if (appliedOnce)
-                        return;
-
-                    appliedOnce = true;
-
-                    await Task.Delay(150);
-
-                    isApplyingRestore = true;
                     try
                     {
-                        // Ensure Normal state before applying normal bounds
-                        presenter?.Restore();
+                        var pos = sender.Position;
+                        var size = sender.Size;
 
-                        var rect = new RectInt32(savedX, savedY, savedW, savedH);
-                        rect = ClampRectToVisibleDisplay(rect);
+                        // Some transitions can briefly report tiny/0 sizes; ignore those.
+                        if (size.Width < 200 || size.Height < 200) return;
 
-                        appWindow.MoveAndResize(rect);
+                        // Determine if "looks maximized" by comparing to the current display work area.
+                        var display = DisplayArea.GetFromWindowId(sender.Id, DisplayAreaFallback.Primary);
+                        var work = display.WorkArea; // excludes taskbar
 
-                        // If last state was maximized, maximize AFTER setting normal bounds
-                        if (savedState == "Maximized")
-                            presenter?.Maximize();
+                        bool looksMaximized =
+                            Math.Abs(pos.X - work.X) <= 2 &&
+                            Math.Abs(pos.Y - work.Y) <= 2 &&
+                            Math.Abs(size.Width - work.Width) <= 2 &&
+                            Math.Abs(size.Height - work.Height) <= 2;
+
+                        // Always save state
+                        Preferences.Set(WindowStateKey, looksMaximized ? "Maximized" : "Normal");
+
+                        // Only persist restore bounds when NOT maximized,
+                        // so maximizing doesn't overwrite the user's preferred normal size.
+                        if (!looksMaximized)
+                        {
+                            Preferences.Set(WindowXKey, pos.X);
+                            Preferences.Set(WindowYKey, pos.Y);
+                            Preferences.Set(WindowWidthKey, size.Width);
+                            Preferences.Set(WindowHeightKey, size.Height);
+                        }
                     }
-                    finally
+                    catch
                     {
-                        // Give Windows time to settle before allowing saves again
-                        await Task.Delay(150);
-                        isApplyingRestore = false;
+                        // Never crash because of persistence
                     }
                 };
             };
@@ -142,8 +132,8 @@ namespace WeightCalorieMAUI
             var displayArea = DisplayArea.GetFromPoint(center, DisplayAreaFallback.Primary);
             var work = displayArea.WorkArea; // excludes taskbar
 
-            int minW = 400;
-            int minH = 300;
+            const int minW = 400;
+            const int minH = 300;
 
             int w = Math.Max(rect.Width, minW);
             int h = Math.Max(rect.Height, minH);
@@ -152,7 +142,7 @@ namespace WeightCalorieMAUI
             if (w > work.Width) w = work.Width;
             if (h > work.Height) h = work.Height;
 
-            // Clamp position (no arbitrary nudges)
+            // Clamp position
             int maxX = (work.X + work.Width) - w;
             int maxY = (work.Y + work.Height) - h;
 
